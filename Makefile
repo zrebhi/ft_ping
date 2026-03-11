@@ -1,0 +1,32 @@
+NAME        = ft_ping
+
+CC          = cc
+CFLAGS      = -Wall -Wextra -Werror
+
+SRCS        = src/main.c
+
+OBJS        = $(SRCS:.c=.o)
+
+BONUS_SRCS  = src/bonus/main_bonus.c
+BONUS_OBJS  = $(BONUS_SRCS:.c=.o)
+
+all: $(NAME)
+
+$(NAME): $(OBJS)
+	$(CC) $(CFLAGS) $(OBJS) -o $(NAME)
+
+%.o: %.c
+	$(CC) $(CFLAGS) -c $< -o $@
+
+clean:
+	rm -f $(OBJS) $(BONUS_OBJS)
+
+fclean: clean
+	rm -f $(NAME)
+
+re: fclean all
+
+bonus: $(BONUS_OBJS)
+	$(CC) $(CFLAGS) $(BONUS_OBJS) -o $(NAME)
+
+.PHONY: all clean fclean re bonus
