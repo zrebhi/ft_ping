@@ -3,7 +3,8 @@ NAME        = ft_ping
 CC          = cc
 CFLAGS      = -Wall -Wextra -Werror
 
-SRCS        = src/main.c
+SRCS        = src/main.c \
+			  src/parser.c
 
 OBJS        = $(SRCS:.c=.o)
 
@@ -26,7 +27,10 @@ fclean: clean
 
 re: fclean all
 
+test: $(NAME)
+	@./tests/test_cli.sh
+
 bonus: $(BONUS_OBJS)
 	$(CC) $(CFLAGS) $(BONUS_OBJS) -o $(NAME)
 
-.PHONY: all clean fclean re bonus
+.PHONY: all clean fclean re bonus test
