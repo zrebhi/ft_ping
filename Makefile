@@ -4,7 +4,8 @@ CC          = cc
 CFLAGS      = -Wall -Wextra -Werror
 
 SRCS        = src/main.c \
-			  src/parser.c
+			  src/parser.c \
+              src/dns.c
 
 OBJS        = $(SRCS:.c=.o)
 
@@ -29,6 +30,7 @@ re: fclean all
 
 test: $(NAME)
 	@./tests/test_cli.sh
+	@./tests/test_dns.sh
 
 bonus: $(BONUS_OBJS)
 	$(CC) $(CFLAGS) $(BONUS_OBJS) -o $(NAME)
