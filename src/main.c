@@ -1,18 +1,23 @@
 #include "ft_ping.h"
 
 int main(int argc, char **argv) {
-    t_ping ping_ctx = {false, false, NULL};
+    t_ping ping_ctx = {0}; // Zero-initialize context
     int status;
 
     status = parse_args(argc, argv, &ping_ctx);
-    
-    // If there was an error, or if the user just wanted the help menu, exit immediately.
     if (status != EX_OK || ping_ctx.is_help) {
         return status;
     }
 
-    // Debug output for manual verification
-    printf("Target: %s, Verbose: %s\n", ping_ctx.target_host, ping_ctx.is_verbose ? "ON" : "OFF");
+    status = resolve_dns(&ping_ctx);
+    if (status != 0) {
+        return status;
+    }
+
+    printf("PING %s (%s): %d data bytes\n", 
+            ping_ctx.target_host, 
+            ping_ctx.dest_ip, 
+            PING_DATA_SIZE);
 
     return EX_OK;
 }
