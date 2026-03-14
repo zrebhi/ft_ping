@@ -17,6 +17,7 @@
 # include <stdlib.h>
 # include <string.h>
 # include <sysexits.h>
+# include <errno.h>
 
 /* Networking headers */
 # include <sys/types.h>
@@ -34,11 +35,14 @@ typedef struct s_ping {
     // Network Resolution Fields
     struct sockaddr_in dest_addr;           // The binary address for the socket
     char               dest_ip[INET_ADDRSTRLEN]; // The string IP (e.g., "8.8.8.8")
+
+    int     sockfd;                      // Socket file descriptor for sending ICMP packets
 } t_ping;
 
 /* Function prototypes */
 void print_usage(void);
 int  parse_args(int argc, char **argv, t_ping *ctx);
 int  resolve_dns(t_ping *ctx);
+int  create_socket(t_ping *ctx);
 
 #endif

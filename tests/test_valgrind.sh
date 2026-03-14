@@ -6,6 +6,8 @@ echo "========================================"
 echo "      Running ft_ping Valgrind Tests    "
 echo "========================================"
 
+require_root "Valgrind"
+
 run_valgrind_test() {
     local test_name="$1"
     local args="$2"
@@ -22,6 +24,7 @@ run_valgrind_test() {
         FAILS=$((FAILS+1))
     fi
 }
+
 
 run_valgrind_test "Valid Host" "google.com"
 run_valgrind_test "Valid Host (IP)" "8.8.8.8"

@@ -14,6 +14,11 @@ int main(int argc, char **argv) {
         return status;
     }
 
+    status = create_socket(&ping_ctx);
+    if (status != 0) {
+        return status;
+    }
+
     printf("PING %s (%s): %d data bytes\n", 
             ping_ctx.target_host, 
             ping_ctx.dest_ip, 
