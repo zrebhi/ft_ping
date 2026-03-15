@@ -6,7 +6,8 @@ CFLAGS      = -Wall -Wextra -Werror
 SRCS        = src/main.c \
 			  src/parser.c \
               src/dns.c \
-              src/socket.c
+              src/socket.c \
+              src/packet.c
 
 OBJS        = $(SRCS:.c=.o)
 
@@ -34,6 +35,7 @@ test: $(NAME)
 	@./tests/test_dns.sh
 	@./tests/test_valgrind.sh
 	@./tests/test_socket.sh
+	@./tests/test_packet.sh
 
 bonus: $(BONUS_OBJS)
 	$(CC) $(CFLAGS) $(BONUS_OBJS) -o $(NAME)
