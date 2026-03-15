@@ -40,7 +40,7 @@ void craft_icmp_packet(t_ping *ctx, t_packet *pkt) {
     pkt->hdr.un.echo.id = htons(ctx->pid);
     pkt->hdr.un.echo.sequence = htons(ctx->sequence);
 
-    for (int i = 0; i < PING_DATA_SIZE - 1; i++) {
+    for (int i = 0; i < PING_DATA_SIZE; i++) {
         pkt->msg[i] = 'a' + (i % 26);
     }
 

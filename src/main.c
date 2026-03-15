@@ -44,7 +44,7 @@ int main(int argc, char **argv) {
         return 1;
     }
 
-    printf("[DEBUG] Success! Fired %zd bytes into the network.\n", bytes_sent);
+    printf("Fired %zd bytes into the network.\n", bytes_sent);
 
     return EX_OK;
 }
