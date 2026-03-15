@@ -4,6 +4,8 @@
 GREEN='\033[0;32m'
 RED='\033[0;31m'
 YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
+CYAN='\033[0;36m'
 NC='\033[0m'
 PING_BIN="./ft_ping"
 FAILS=0
@@ -20,12 +22,20 @@ run_test() {
     local expected_code=$3
     local expected_str="$4"
 
+    # Print the header and the exact command being run
+    echo -e "${BLUE}▶ [TEST]${NC} ${test_name}"
+    echo -e "  ${YELLOW}Cmd:${NC} sudo $PING_BIN $args"
+
+    # Run the binary and capture both stdout and stderr
     local output
     output=$($PING_BIN $args 2>&1)
     local exit_code=$?
 
+    # Check if the exit code matches AND the output contains our expected string
     if [ $exit_code -eq $expected_code ] && [[ "$output" == *"$expected_str"* ]]; then
-        echo -e "${GREEN}[PASS]${NC} $test_name"
+        echo -e "  ${CYAN}Output:${NC}"
+        echo "$output" | sed 's/^/    /'
+        echo -e "  ${GREEN}✔ PASS${NC}\n"
     else
         echo -e "${RED}[FAIL]${NC} $test_name"
         echo "       Expected Exit Code: $expected_code, Got: $exit_code"

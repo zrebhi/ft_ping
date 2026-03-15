@@ -16,6 +16,9 @@ run_valgrind_test() {
     valgrind --leak-check=full --show-leak-kinds=all --error-exitcode=42 $PING_BIN $args > /dev/null 2>&1
     local exit_code=$?
 
+    echo -e "${BLUE}▶ [TEST]${NC} ${test_name} (Valgrind)"
+    echo -e "  ${YELLOW}Cmd:${NC} $PING_BIN $args"
+
     if [ $exit_code -ne 42 ]; then
         echo -e "${GREEN}[PASS]${NC} $test_name (No leaks)"
     else
