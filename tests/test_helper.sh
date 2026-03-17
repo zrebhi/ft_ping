@@ -21,6 +21,7 @@ run_test() {
     local args="$2"
     local expected_code=$3
     local expected_str="$4"
+    local duration=${5:-2} # Default timeout of 2 seconds
 
     # Print the header and the exact command being run
     echo -e "${BLUE}▶ [TEST]${NC} ${test_name}"
@@ -28,21 +29,24 @@ run_test() {
 
     # Run the binary and capture both stdout and stderr
     local output
-    output=$($PING_BIN $args 2>&1)
+    output=$(timeout $duration $PING_BIN $args 2>&1)
     local exit_code=$?
 
     # Check if the exit code matches AND the output contains our expected string
-    if [ $exit_code -eq $expected_code ] && [[ "$output" == *"$expected_str"* ]]; then
-        echo -e "  ${CYAN}Output:${NC}"
-        echo "$output" | sed 's/^/    /'
-        echo -e "  ${GREEN}✔ PASS${NC}\n"
-    else
-        echo -e "${RED}[FAIL]${NC} $test_name"
-        echo "       Expected Exit Code: $expected_code, Got: $exit_code"
-        echo "       Expected String: '$expected_str'"
-        echo "       Actual Output: '$output'"
-        FAILS=$((FAILS+1))
+    if [[ $exit_code -eq $expected_code ]] || [[ $exit_code -eq 124 && $expected_code -eq 0 ]]; then
+        if [[ "$output" == *"$expected_str"* ]]; then
+            echo -e "  ${CYAN}Output:${NC}"
+            echo "$output" | sed 's/^/    /'
+            echo -e "  ${GREEN}✔ PASS${NC}\n"
+            return 0
+        fi
     fi
+
+    echo -e "${RED}[FAIL]${NC} $test_name"
+    echo "       Expected Exit Code: $expected_code, Got: $exit_code"
+    echo "       Expected String: '$expected_str'"
+    echo "       Actual Output snippet: $(echo "$output" | head -n 1)"
+    FAILS=$((FAILS+1))
 }
 
 finish_tests() {

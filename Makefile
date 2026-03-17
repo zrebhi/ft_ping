@@ -36,6 +36,7 @@ test: $(NAME)
 	@./tests/test_valgrind.sh
 	@./tests/test_socket.sh
 	@./tests/test_packet.sh
+	@./tests/test_loop.sh
 
 bonus: $(BONUS_OBJS)
 	$(CC) $(CFLAGS) $(BONUS_OBJS) -o $(NAME)
