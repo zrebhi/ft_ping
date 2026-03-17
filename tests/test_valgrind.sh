@@ -12,18 +12,20 @@ run_valgrind_test() {
     local test_name="$1"
     local args="$2"
     
-    # Run valgrind quietly. We only care if it triggers exit code 42.
-    valgrind --leak-check=full --show-leak-kinds=all --error-exitcode=42 $PING_BIN $args > /dev/null 2>&1
-    local exit_code=$?
+    # Capture Valgrind's output into a variable. 
+    # We remove --preserve-status and --error-exitcode as we don't need them anymore.
+    local valgrind_out
+    valgrind_out=$(timeout 2 valgrind --leak-check=full $PING_BIN $args 2>&1)
 
     echo -e "${BLUE}▶ [TEST]${NC} ${test_name} (Valgrind)"
-    echo -e "  ${YELLOW}Cmd:${NC} $PING_BIN $args"
 
-    if [ $exit_code -ne 42 ]; then
+    # Grep the output for the exact success string
+    if echo "$valgrind_out" | grep -q "ERROR SUMMARY: 0 errors"; then
         echo -e "${GREEN}[PASS]${NC} $test_name (No leaks)"
     else
         echo -e "${RED}[FAIL]${NC} $test_name (Memory leak detected!)"
-        echo "       Run 'valgrind --leak-check=full $PING_BIN $args' manually to see details."
+        # Print the specific leak line for easy debugging
+        echo "$valgrind_out" | grep "definitely lost:" | sed 's/^/       /'
         FAILS=$((FAILS+1))
     fi
 }
