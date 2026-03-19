@@ -49,7 +49,7 @@ int main(int argc, char **argv) {
      * This ensures our test scripts capture the output before 
      * the process is killed by 'timeout'. 
      */
-    setvbuf(stdout, NULL, _IOLBF, 0);
+    setlinebuf(stdout);
 
     status = parse_args(argc, argv, &ping_ctx);
     if (status != EX_OK || ping_ctx.is_help) {
