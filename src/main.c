@@ -73,9 +73,21 @@ void receive_ping(t_ping *ctx) {
     struct iphdr *ip_hdr = (struct iphdr *)ctx->recv_buf; 
     /* ihl is given in 4-byte words so we multiply by 4 to get the length in bytes */
     size_t ip_hdr_len = ip_hdr->ihl * 4;
+    /* Extract the ICMP Header by offsetting the buffer pointer */
     struct icmphdr *icmp_hdr = (struct icmphdr *)(ctx->recv_buf + ip_hdr_len);
 
-    printf("[DEBUG] Received packet, ICMP Type: %d\n", icmp_hdr->type);
+    if (icmp_hdr->type == ICMP_ECHOREPLY) {
+        /* Convert ID and Sequence from network byte order back to host byte order */
+        uint16_t recv_id = ntohs(icmp_hdr->un.echo.id);
+        uint16_t recv_seq = ntohs(icmp_hdr->un.echo.sequence);
+
+        if (recv_id == ctx->pid) {
+            printf("[DEBUG] Valid Reply! seq=%d, id=%d\n", recv_seq, recv_id);
+        }
+    } else {
+        /* We ignore other ICMP types for now (like Destination Unreachable)
+         * unless running in verbose mode, which we will handle later. */
+    }
 }
 
 int main(int argc, char **argv) {
