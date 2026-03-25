@@ -37,6 +37,7 @@ test: $(NAME)
 	@./tests/test_socket.sh
 	@./tests/test_packet.sh
 	@./tests/test_loop.sh
+	@./tests/test_recv.sh
 
 bonus: $(BONUS_OBJS)
 	$(CC) $(CFLAGS) $(BONUS_OBJS) -o $(NAME)

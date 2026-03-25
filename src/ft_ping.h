@@ -18,6 +18,7 @@
 # include <sysexits.h>
 # include <errno.h>
 # include <unistd.h>
+# include <signal.h>
 
 /* Networking headers */
 # include <sys/types.h>
@@ -26,7 +27,7 @@
 # include <arpa/inet.h>
 # include <netinet/in.h>
 # include <netinet/ip_icmp.h>
-# include <signal.h>
+# include <netinet/ip.h>
 
 # define PING_DATA_SIZE 56
 
@@ -37,14 +38,16 @@ typedef struct s_ping {
     char    *target_host;
     
     // Network Resolution Fields
-    struct sockaddr_in dest_addr;           // The binary address for the socket
-    char               dest_ip[INET_ADDRSTRLEN]; // The string IP (e.g., "8.8.8.8")
+    struct sockaddr_in dest_addr;
+    char               dest_ip[INET_ADDRSTRLEN];
 
-    int     sockfd;                      // Socket file descriptor for sending ICMP packets
+    int     sockfd;
 
     // Packet Tracking
-    pid_t    pid;        // Process ID to identify our packets
-    uint16_t sequence;   // Tracks the ICMP sequence number
+    pid_t    pid;
+    uint16_t sequence;
+
+    char    recv_buf[1024];
 } t_ping;
 
 /* Packet Structure: Header (8 bytes) + Payload (56 bytes) = 64 bytes total */
@@ -60,5 +63,6 @@ int  resolve_dns(t_ping *ctx);
 int  create_socket(t_ping *ctx);
 uint16_t calculate_checksum(uint16_t *data, size_t length);
 void     craft_icmp_packet(t_ping *ctx, t_packet *pkt);
+void receive_ping(t_ping *ctx);
 
 #endif

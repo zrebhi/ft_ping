@@ -41,6 +41,43 @@ void send_ping(t_ping *ctx) {
     }
 }
 
+/*
+ * Blocks and waits for incoming packets from the raw socket.
+ * If no packet arrives, it relies on SIGALRM to interrupt the system call (EINTR),
+ * preventing infinite hangs on dropped packets.
+ * Extracts the IP header to find the ICMP payload.
+ */
+void receive_ping(t_ping *ctx) {
+    struct sockaddr_in sender;
+    socklen_t sender_len = sizeof(sender);
+
+    ssize_t bytes_recv = recvfrom(ctx->sockfd, 
+                                  ctx->recv_buf, 
+                                  sizeof(ctx->recv_buf), 
+                                  0, 
+                                  (struct sockaddr *)&sender, 
+                                  &sender_len);
+
+    if (bytes_recv < 0) {
+        /* * EINTR means our 1-second SIGALRM fired while waiting.
+         * This acts as our automatic timeout for lost/dropped packets.
+         * We simply return to the main loop to fire the next ping.
+         */
+        if (errno == EINTR) {
+            return;
+        }
+        fprintf(stderr, "ping: recvfrom: %s\n", strerror(errno));
+        return;
+    }
+
+    struct iphdr *ip_hdr = (struct iphdr *)ctx->recv_buf; 
+    /* ihl is given in 4-byte words so we multiply by 4 to get the length in bytes */
+    size_t ip_hdr_len = ip_hdr->ihl * 4;
+    struct icmphdr *icmp_hdr = (struct icmphdr *)(ctx->recv_buf + ip_hdr_len);
+
+    printf("[DEBUG] Received packet, ICMP Type: %d\n", icmp_hdr->type);
+}
+
 int main(int argc, char **argv) {
     t_ping ping_ctx = {0};
     int status;
@@ -71,8 +108,18 @@ int main(int argc, char **argv) {
             ping_ctx.dest_ip, 
             PING_DATA_SIZE);
 
-    /* Register the alarm signal handler */
-    signal(SIGALRM, alarm_handler);
+    /* Register the alarm signal handler using sigaction */
+    struct sigaction sa = {0}; 
+    
+    sa.sa_handler = alarm_handler;
+    /* * Ensure SA_RESTART is disabled preventing the OS 
+     * from automatically restarting system calls interrupted by a signal */
+    sa.sa_flags = 0;
+    
+    if (sigaction(SIGALRM, &sa, NULL) == -1) {
+        fprintf(stderr, "ping: sigaction: %s\n", strerror(errno));
+        return 1;
+    }
 
     /* Main execution loop */
     while (1) {
@@ -81,8 +128,10 @@ int main(int argc, char **argv) {
             g_send_packet = 0;
             alarm(1);
         }
-        /* Suspend execution until a signal is caught, preventing 100% CPU usage */
-        pause(); 
+        /* * Blocks here (0% CPU) until an ICMP packet arrives or the 1-second alarm fires.
+         * This prevents busy-waiting and ensures RTT calculations remain highly accurate.
+         */
+        receive_ping(&ping_ctx);
     }
 
     return EX_OK;
