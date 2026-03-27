@@ -22,6 +22,7 @@ run_test() {
     local expected_code=$3
     local expected_str="$4"
     local duration=${5:-2} # Default timeout of 2 seconds
+    local sig_flag=${6:-}  # Optional 6th argument for specific signals
 
     # Print the header and the exact command being run
     echo -e "${BLUE}▶ [TEST]${NC} ${test_name}"
@@ -29,7 +30,7 @@ run_test() {
 
     # Run the binary and capture both stdout and stderr
     local output
-    output=$(timeout $duration $PING_BIN $args 2>&1)
+    output=$(timeout $sig_flag $duration $PING_BIN $args 2>&1)
     local exit_code=$?
 
     # Check if the exit code matches AND the output contains our expected string

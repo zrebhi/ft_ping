@@ -20,6 +20,7 @@
 # include <unistd.h>
 # include <signal.h>
 # include <sys/time.h>
+# include <math.h>
 
 /* Networking headers */
 # include <sys/types.h>
@@ -31,6 +32,18 @@
 # include <netinet/ip.h>
 
 # define PING_DATA_SIZE 56
+
+/* Structure to track all our statistics for the final output */
+typedef struct s_stats {
+    size_t  packets_transmitted;
+    size_t  packets_received;
+    double  rtt_min;
+    double  rtt_max;
+    double  rtt_sum;
+    double  rtt_sum_sq; // Sum of squares, needed for standard deviation
+    struct  timeval start_time;
+    struct  timeval end_time;
+} t_stats;
 
 /* Central state structure for ft_ping */
 typedef struct s_ping {
@@ -49,6 +62,8 @@ typedef struct s_ping {
     uint16_t sequence;
 
     char    recv_buf[1024];
+    
+    t_stats stats;
 } t_ping;
 
 /* Packet Structure: Header (8 bytes) + Payload (56 bytes) = 64 bytes total */

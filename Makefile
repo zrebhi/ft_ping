@@ -38,6 +38,7 @@ test: $(NAME)
 	@./tests/test_packet.sh
 	@./tests/test_loop.sh
 	@./tests/test_recv.sh
+	@./tests/test_signals.sh
 
 bonus: $(BONUS_OBJS)
 	$(CC) $(CFLAGS) $(BONUS_OBJS) -o $(NAME)
