@@ -36,14 +36,20 @@ void craft_icmp_packet(t_ping *ctx, t_packet *pkt) {
     pkt->hdr.type = ICMP_ECHO;  // 8 (Ping Request)
     pkt->hdr.code = 0;          // 0 for Echo Request
     
-    // Use htons() to ensure correct byte order for the network
+    /* Use htons() to ensure correct byte order for the network */
     pkt->hdr.un.echo.id = htons(ctx->pid);
     pkt->hdr.un.echo.sequence = htons(ctx->sequence);
 
-    for (int i = 0; i < PING_DATA_SIZE - 1; i++) {
-        pkt->msg[i] = 'a' + (i % 26);
+    /* Add timestamp at the beginning of our payload for round-trip time calculation */
+    struct timeval tv_send;
+    gettimeofday(&tv_send, NULL);
+
+    memcpy(pkt->msg, &tv_send, sizeof(tv_send));
+
+    for (size_t i = sizeof(tv_send); i < PING_DATA_SIZE - 1; i++) {
+        pkt->msg[i] = 'a' + ((i - sizeof(tv_send)) % 26);
     }
 
-    pkt->hdr.checksum = 0; // Must be zero before calculating checksum
+    pkt->hdr.checksum = 0; // Must be zero BEFORE calculating checksum
     pkt->hdr.checksum = calculate_checksum((uint16_t *)pkt, sizeof(t_packet));
 }
