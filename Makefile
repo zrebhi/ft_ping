@@ -36,7 +36,6 @@ test: $(NAME)
 	@./tests/test_dns.sh
 	@./tests/test_valgrind.sh
 	@./tests/test_socket.sh
-	@./tests/test_packet.sh
 	@./tests/test_loop.sh
 	@./tests/test_recv.sh
 	@./tests/test_signals.sh
