@@ -82,7 +82,21 @@ void receive_ping(t_ping *ctx) {
         uint16_t recv_seq = ntohs(icmp_hdr->un.echo.sequence);
 
         if (recv_id == ctx->pid) {
-            printf("[DEBUG] Valid Reply! seq=%d, id=%d\n", recv_seq, recv_id);
+            struct timeval tv_recv, tv_send;
+            
+            /* Grab the exact time we received the packet */
+            gettimeofday(&tv_recv, NULL);
+            
+            /* Extract our send timestamp from the payload (skipping the 8-byte ICMP header) */
+            char *payload = (char *)icmp_hdr + sizeof(struct icmphdr);
+            /* We added the timestamp at the beginning of the payload in craft_icmp_packet */
+            memcpy(&tv_send, payload, sizeof(tv_send));
+            
+            /* Calculate RTT in milliseconds */
+            double rtt = (tv_recv.tv_sec - tv_send.tv_sec) * 1000.0 + 
+                         (tv_recv.tv_usec - tv_send.tv_usec) / 1000.0;
+                         
+            printf("[DEBUG] Valid Reply! seq=%d, id=%d, time=%.3f ms\n", recv_seq, recv_id, rtt);
         }
     } else {
         /* We ignore other ICMP types for now (like Destination Unreachable)

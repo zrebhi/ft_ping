@@ -19,6 +19,7 @@
 # include <errno.h>
 # include <unistd.h>
 # include <signal.h>
+# include <sys/time.h>
 
 /* Networking headers */
 # include <sys/types.h>
