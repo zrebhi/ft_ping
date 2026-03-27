@@ -1,10 +1,11 @@
 #include "ft_ping.h"
 
-/* Global flag modified by the signal handler.
+/* Global state machine modified by the signal handler.
+ * 0 = IDLE, 1 = SEND_PACKET, 2 = STOP_LOOP
  * volatile ensures the compiler does not optimize it away.
  * sig_atomic_t ensures read/write operations are atomic and thread-safe.
  */
-volatile sig_atomic_t g_send_packet = 1;
+volatile sig_atomic_t g_action = 1;
 
 /*
  * Catches the SIGALRM signal and sets the flag to trigger the next packet.
@@ -12,7 +13,16 @@ volatile sig_atomic_t g_send_packet = 1;
  */
 void alarm_handler(int signum) {
     (void)signum;
-    g_send_packet = 1;
+    /* Only set to SEND if we haven't already been told to STOP */
+    if (g_action != 2) {
+        g_action = 1;
+    }
+}
+
+/* Catches Ctrl+C (SIGINT) and gracefully stops the main loop */
+void int_handler(int signum) {
+    (void)signum;
+    g_action = 2;
 }
 
 /*
@@ -37,6 +47,7 @@ void send_ping(t_ping *ctx) {
     if (bytes_sent < 0) {
         fprintf(stderr, "ping: sendto: %s\n", strerror(errno));
     } else {
+        ctx->stats.packets_transmitted++;
         printf("[DEBUG] Success! Fired %zd bytes into the network. (seq=%d)\n", bytes_sent, ctx->sequence);
     }
 }
@@ -95,7 +106,9 @@ void receive_ping(t_ping *ctx) {
             /* Calculate RTT in milliseconds */
             double rtt = (tv_recv.tv_sec - tv_send.tv_sec) * 1000.0 + 
                          (tv_recv.tv_usec - tv_send.tv_usec) / 1000.0;
-                         
+
+            update_stats(ctx, rtt);         
+            
             printf("[DEBUG] Valid Reply! seq=%d, id=%d, time=%.3f ms\n", recv_seq, recv_id, rtt);
         }
     } else {
@@ -147,11 +160,16 @@ int main(int argc, char **argv) {
         return 1;
     }
 
+    /* Register the Ctrl+C signal handler */
+    signal(SIGINT, int_handler);
+
     /* Main execution loop */
-    while (1) {
-        if (g_send_packet) {
+    gettimeofday(&ping_ctx.stats.start_time, NULL);
+
+    while (g_action != 2) {
+        if (g_action == 1) {
             send_ping(&ping_ctx);
-            g_send_packet = 0;
+            g_action = 0;
             alarm(1);
         }
         /* * Blocks here (0% CPU) until an ICMP packet arrives or the 1-second alarm fires.
@@ -159,6 +177,9 @@ int main(int argc, char **argv) {
          */
         receive_ping(&ping_ctx);
     }
+
+    gettimeofday(&ping_ctx.stats.end_time, NULL);
+    print_stats(&ping_ctx);
 
     return EX_OK;
 }

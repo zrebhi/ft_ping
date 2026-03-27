@@ -7,7 +7,8 @@ SRCS        = src/main.c \
 			  src/parser.c \
               src/dns.c \
               src/socket.c \
-              src/packet.c
+              src/packet.c \
+			  src/stats.c \
 
 OBJS        = $(SRCS:.c=.o)
 
@@ -17,7 +18,7 @@ BONUS_OBJS  = $(BONUS_SRCS:.c=.o)
 all: $(NAME)
 
 $(NAME): $(OBJS)
-	$(CC) $(CFLAGS) $(OBJS) -o $(NAME)
+	$(CC) $(CFLAGS) $(OBJS) -o $(NAME) -lm
 
 %.o: %.c
 	$(CC) $(CFLAGS) -c $< -o $@
@@ -38,6 +39,7 @@ test: $(NAME)
 	@./tests/test_packet.sh
 	@./tests/test_loop.sh
 	@./tests/test_recv.sh
+	@./tests/test_signals.sh
 
 bonus: $(BONUS_OBJS)
 	$(CC) $(CFLAGS) $(BONUS_OBJS) -o $(NAME)
