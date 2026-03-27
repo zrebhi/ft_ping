@@ -17,8 +17,8 @@ exit_code=$?
 
 # timeout returns 124 when the command successfully times out
 if [ $exit_code -eq 124 ]; then
-    # Count occurrences of our debug string
-    packet_count=$(echo "$output" | grep -c "\[DEBUG\] Success!")
+    # Count occurrences of our valid reply string
+    packet_count=$(echo "$output" | grep -c "bytes from")
     
     if [ "$packet_count" -ge 3 ] && [ "$packet_count" -le 4 ]; then
         echo -e "  ${CYAN}Output:${NC}"

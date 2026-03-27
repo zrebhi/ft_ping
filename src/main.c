@@ -33,22 +33,20 @@ void send_ping(t_ping *ctx) {
     t_packet packet;
     
     ctx->pid = getpid() & 0xFFFF;
-    ctx->sequence++;
-
+    
     craft_icmp_packet(ctx, &packet);
-
+    
     ssize_t bytes_sent = sendto(ctx->sockfd, 
-                                &packet, 
-                                sizeof(packet), 
-                                0, 
-                                (struct sockaddr *)&ctx->dest_addr, 
-                                sizeof(ctx->dest_addr));
-
-    if (bytes_sent < 0) {
-        fprintf(stderr, "ping: sendto: %s\n", strerror(errno));
-    } else {
+        &packet, 
+        sizeof(packet), 
+        0, 
+        (struct sockaddr *)&ctx->dest_addr, 
+        sizeof(ctx->dest_addr));
+        
+        if (bytes_sent < 0) {
+            fprintf(stderr, "ping: sendto: %s\n", strerror(errno));
+        } else {
         ctx->stats.packets_transmitted++;
-        printf("[DEBUG] Success! Fired %zd bytes into the network. (seq=%d)\n", bytes_sent, ctx->sequence);
     }
 }
 
@@ -109,7 +107,12 @@ void receive_ping(t_ping *ctx) {
 
             update_stats(ctx, rtt);         
             
-            printf("[DEBUG] Valid Reply! seq=%d, id=%d, time=%.3f ms\n", recv_seq, recv_id, rtt);
+            printf("%zd bytes from %s: icmp_seq=%d ttl=%d time=%.3f ms\n", 
+                    bytes_recv - ip_hdr_len, 
+                    ctx->dest_ip, 
+                    recv_seq, 
+                    ip_hdr->ttl, 
+                    rtt);
         }
     } else {
         /* We ignore other ICMP types for now (like Destination Unreachable)
@@ -164,8 +167,6 @@ int main(int argc, char **argv) {
     signal(SIGINT, int_handler);
 
     /* Main execution loop */
-    gettimeofday(&ping_ctx.stats.start_time, NULL);
-
     while (g_action != 2) {
         if (g_action == 1) {
             send_ping(&ping_ctx);
@@ -178,7 +179,6 @@ int main(int argc, char **argv) {
         receive_ping(&ping_ctx);
     }
 
-    gettimeofday(&ping_ctx.stats.end_time, NULL);
     print_stats(&ping_ctx);
 
     return EX_OK;

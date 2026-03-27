@@ -38,7 +38,7 @@ void craft_icmp_packet(t_ping *ctx, t_packet *pkt) {
     
     /* Use htons() to ensure correct byte order for the network */
     pkt->hdr.un.echo.id = htons(ctx->pid);
-    pkt->hdr.un.echo.sequence = htons(ctx->sequence);
+    pkt->hdr.un.echo.sequence = htons(ctx->sequence++);
 
     /* Add timestamp at the beginning of our payload for round-trip time calculation */
     struct timeval tv_send;
