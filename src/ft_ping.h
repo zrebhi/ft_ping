@@ -80,5 +80,7 @@ int  create_socket(t_ping *ctx);
 uint16_t calculate_checksum(uint16_t *data, size_t length);
 void     craft_icmp_packet(t_ping *ctx, t_packet *pkt);
 void receive_ping(t_ping *ctx);
+void update_stats(t_ping *ctx, double rtt);
+void print_stats(t_ping *ctx);
 
 #endif

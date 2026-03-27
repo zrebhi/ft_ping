@@ -47,6 +47,7 @@ void send_ping(t_ping *ctx) {
     if (bytes_sent < 0) {
         fprintf(stderr, "ping: sendto: %s\n", strerror(errno));
     } else {
+        ctx->stats.packets_transmitted++;
         printf("[DEBUG] Success! Fired %zd bytes into the network. (seq=%d)\n", bytes_sent, ctx->sequence);
     }
 }
@@ -105,7 +106,9 @@ void receive_ping(t_ping *ctx) {
             /* Calculate RTT in milliseconds */
             double rtt = (tv_recv.tv_sec - tv_send.tv_sec) * 1000.0 + 
                          (tv_recv.tv_usec - tv_send.tv_usec) / 1000.0;
-                         
+
+            update_stats(ctx, rtt);         
+            
             printf("[DEBUG] Valid Reply! seq=%d, id=%d, time=%.3f ms\n", recv_seq, recv_id, rtt);
         }
     } else {
@@ -176,7 +179,7 @@ int main(int argc, char **argv) {
     }
 
     gettimeofday(&ping_ctx.stats.end_time, NULL);
-    printf("\n--- %s ping statistics ---\n", ping_ctx.target_host);
+    print_stats(&ping_ctx);
 
     return EX_OK;
 }

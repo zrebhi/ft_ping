@@ -23,6 +23,7 @@ run_test() {
     local expected_str="$4"
     local duration=${5:-2} # Default timeout of 2 seconds
     local sig_flag=${6:-}  # Optional 6th argument for specific signals
+    local is_regex=${7:-0} # Optional 7th arg (1 = Regex Match, 0 = Literal String)
 
     # Print the header and the exact command being run
     echo -e "${BLUE}▶ [TEST]${NC} ${test_name}"
@@ -33,19 +34,30 @@ run_test() {
     output=$(timeout $sig_flag $duration $PING_BIN $args 2>&1)
     local exit_code=$?
 
-    # Check if the exit code matches AND the output contains our expected string
+    # Check if the exit code matches
     if [[ $exit_code -eq $expected_code ]] || [[ $exit_code -eq 124 && $expected_code -eq 0 ]]; then
-        if [[ "$output" == *"$expected_str"* ]]; then
-            echo -e "  ${CYAN}Output:${NC}"
-            echo "$output" | sed 's/^/    /'
-            echo -e "  ${GREEN}✔ PASS${NC}\n"
-            return 0
+        
+        # Branch logic based on the Regex flag
+        if [[ "$is_regex" -eq 1 ]]; then
+            if echo "$output" | grep -E -q "$expected_str"; then
+                echo -e "  ${CYAN}Regex Matched:${NC} $expected_str"
+                echo -e "  ${GREEN}✔ PASS${NC}\n"
+                return 0
+            fi
+        else
+            if [[ "$output" == *"$expected_str"* ]]; then
+                echo -e "  ${CYAN}Output Matched:${NC}"
+                echo "$output" | sed 's/^/    /' | head -n 3
+                echo -e "  ${GREEN}✔ PASS${NC}\n"
+                return 0
+            fi
         fi
     fi
 
+    # Failure Output
     echo -e "${RED}[FAIL]${NC} $test_name"
     echo "       Expected Exit Code: $expected_code, Got: $exit_code"
-    echo "       Expected String: '$expected_str'"
+    echo "       Expected Match: '$expected_str'"
     echo "       Actual Output snippet: $(echo "$output" | head -n 1)"
     FAILS=$((FAILS+1))
 }
