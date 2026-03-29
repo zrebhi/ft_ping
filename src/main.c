@@ -196,5 +196,9 @@ int main(int argc, char **argv) {
 
     print_stats(&ping_ctx);
 
+    if (ping_ctx.sockfd > 0) {
+        close(ping_ctx.sockfd);
+    }
+
     return EX_OK;
 }
