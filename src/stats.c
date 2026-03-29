@@ -29,6 +29,10 @@ void print_stats(t_ping *ctx) {
     if (ctx->stats.packets_transmitted > 0) {
         loss_pct = ((double)(ctx->stats.packets_transmitted - ctx->stats.packets_received) / 
                    ctx->stats.packets_transmitted) * 100.0;
+        /* Clamp to 0 to prevent negative loss from duplicated packets */
+        if (loss_pct < 0.0) {
+            loss_pct = 0.0;
+        }
     }
 
     /* Print Transmitted / Received / Loss / Total Time */
