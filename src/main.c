@@ -32,8 +32,6 @@ void int_handler(int signum) {
 void send_ping(t_ping *ctx) {
     t_packet packet;
     
-    ctx->pid = getpid() & 0xFFFF;
-    
     craft_icmp_packet(ctx, &packet);
     
     ssize_t bytes_sent = sendto(ctx->sockfd, 
@@ -115,8 +113,9 @@ void receive_ping(t_ping *ctx) {
                     rtt);
         }
     } else {
-        /* We ignore other ICMP types for now (like Destination Unreachable)
-         * unless running in verbose mode, which we will handle later. */
+        if (ctx->is_verbose) {
+            handle_icmp_error(ctx, icmp_hdr, &sender, bytes_recv, ip_hdr_len);
+        }
     }
 }
 
@@ -145,10 +144,17 @@ int main(int argc, char **argv) {
         return status;
     }
 
-    printf("PING %s (%s): %d data bytes\n", 
-            ping_ctx.target_host, 
-            ping_ctx.dest_ip, 
-            PING_DATA_SIZE);
+    /* Initialize Process ID for packet tracking */
+    ping_ctx.pid = getpid() & 0xFFFF;
+
+    if (ping_ctx.is_verbose) {
+        printf("PING %s (%s): %d data bytes, id 0x%04x = %d\n", 
+                ping_ctx.target_host, ping_ctx.dest_ip, PING_DATA_SIZE, 
+                ping_ctx.pid, ping_ctx.pid);
+    } else {
+        printf("PING %s (%s): %d data bytes\n", 
+                ping_ctx.target_host, ping_ctx.dest_ip, PING_DATA_SIZE);
+    }
 
     /* Register the alarm signal handler using sigaction */
     struct sigaction sa = {0}; 
