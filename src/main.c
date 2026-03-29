@@ -200,5 +200,10 @@ int main(int argc, char **argv) {
         close(ping_ctx.sockfd);
     }
 
+    /* If we transmitted packets but received none, exit with error code 1 */
+    if (ping_ctx.stats.packets_transmitted > 0 && ping_ctx.stats.packets_received == 0) {
+        return 1;
+    }
+
     return EX_OK;
 }
