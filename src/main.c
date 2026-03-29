@@ -77,9 +77,18 @@ void receive_ping(t_ping *ctx) {
         return;
     }
 
+    /* Ensure we have at least enough bytes for a standard IP header */
+    if (bytes_recv < (ssize_t)sizeof(struct iphdr)) {
+        return; /* Drop malformed/fragmented packet */
+    }
+
     struct iphdr *ip_hdr = (struct iphdr *)ctx->recv_buf; 
     /* ihl is given in 4-byte words so we multiply by 4 to get the length in bytes */
     size_t ip_hdr_len = ip_hdr->ihl * 4;
+    /* Ensure we have enough bytes for the IP header PLUS the ICMP header */
+    if (bytes_recv < (ssize_t)(ip_hdr_len + sizeof(struct icmphdr))) {
+        return; /* Drop malformed packet to prevent out-of-bounds read */
+    }
     /* Extract the ICMP Header by offsetting the buffer pointer */
     struct icmphdr *icmp_hdr = (struct icmphdr *)(ctx->recv_buf + ip_hdr_len);
 
