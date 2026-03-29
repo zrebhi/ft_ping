@@ -79,9 +79,10 @@ int  resolve_dns(t_ping *ctx);
 int  create_socket(t_ping *ctx);
 uint16_t calculate_checksum(uint16_t *data, size_t length);
 void     craft_icmp_packet(t_ping *ctx, t_packet *pkt);
-void receive_ping(t_ping *ctx);
 void update_stats(t_ping *ctx, double rtt);
 void print_stats(t_ping *ctx);
 void handle_icmp_error(t_ping *ctx, struct icmphdr *icmp_hdr, struct sockaddr_in *sender, ssize_t bytes_recv, size_t ip_hdr_len);
+void send_ping(t_ping *ctx);
+void receive_ping(t_ping *ctx);
 
 #endif
