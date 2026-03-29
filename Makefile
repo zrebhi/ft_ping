@@ -21,7 +21,7 @@ all: $(NAME)
 $(NAME): $(OBJS)
 	$(CC) $(CFLAGS) $(OBJS) -o $(NAME) -lm
 
-%.o: %.c
+%.o: %.c src/ft_ping.h
 	$(CC) $(CFLAGS) -c $< -o $@
 
 clean:

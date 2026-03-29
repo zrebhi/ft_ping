@@ -77,13 +77,26 @@ void receive_ping(t_ping *ctx) {
         return;
     }
 
+    /* Ensure we have at least enough bytes for a standard IP header */
+    if (bytes_recv < (ssize_t)sizeof(struct iphdr)) {
+        return; /* Drop malformed/fragmented packet */
+    }
+
     struct iphdr *ip_hdr = (struct iphdr *)ctx->recv_buf; 
     /* ihl is given in 4-byte words so we multiply by 4 to get the length in bytes */
     size_t ip_hdr_len = ip_hdr->ihl * 4;
+    /* Ensure we have enough bytes for the IP header PLUS the ICMP header */
+    if (bytes_recv < (ssize_t)(ip_hdr_len + sizeof(struct icmphdr))) {
+        return; /* Drop malformed packet to prevent out-of-bounds read */
+    }
     /* Extract the ICMP Header by offsetting the buffer pointer */
     struct icmphdr *icmp_hdr = (struct icmphdr *)(ctx->recv_buf + ip_hdr_len);
 
     if (icmp_hdr->type == ICMP_ECHOREPLY) {
+        /* Ensure the packet actually contains enough data for our timestamp */
+        if (bytes_recv < (ssize_t)(ip_hdr_len + sizeof(struct icmphdr) + sizeof(struct timeval))) {
+            return; /* Drop malformed/truncated packet to prevent reading uninitialized memory */
+        }
         /* Convert ID and Sequence from network byte order back to host byte order */
         uint16_t recv_id = ntohs(icmp_hdr->un.echo.id);
         uint16_t recv_seq = ntohs(icmp_hdr->un.echo.sequence);
@@ -186,6 +199,15 @@ int main(int argc, char **argv) {
     }
 
     print_stats(&ping_ctx);
+
+    if (ping_ctx.sockfd > 0) {
+        close(ping_ctx.sockfd);
+    }
+
+    /* If we transmitted packets but received none, exit with error code 1 */
+    if (ping_ctx.stats.packets_transmitted > 0 && ping_ctx.stats.packets_received == 0) {
+        return 1;
+    }
 
     return EX_OK;
 }
