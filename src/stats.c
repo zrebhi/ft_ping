@@ -47,6 +47,10 @@ void print_stats(t_ping *ctx) {
         
         /* Standard deviation formula: sqrt((sum_of_squares / N) - (average^2)) */
         double variance = (ctx->stats.rtt_sum_sq / ctx->stats.packets_received) - (avg * avg);
+        /* Clamp microscopic negative variances caused by floating-point imprecision */
+        if (variance < 0.0) {
+            variance = 0.0;
+        }
         double stddev = sqrt(variance);
 
         printf("round-trip min/avg/max/stddev = %.3f/%.3f/%.3f/%.3f ms\n", 
