@@ -93,6 +93,10 @@ void receive_ping(t_ping *ctx) {
     struct icmphdr *icmp_hdr = (struct icmphdr *)(ctx->recv_buf + ip_hdr_len);
 
     if (icmp_hdr->type == ICMP_ECHOREPLY) {
+        /* Ensure the packet actually contains enough data for our timestamp */
+        if (bytes_recv < (ssize_t)(ip_hdr_len + sizeof(struct icmphdr) + sizeof(struct timeval))) {
+            return; /* Drop malformed/truncated packet to prevent reading uninitialized memory */
+        }
         /* Convert ID and Sequence from network byte order back to host byte order */
         uint16_t recv_id = ntohs(icmp_hdr->un.echo.id);
         uint16_t recv_seq = ntohs(icmp_hdr->un.echo.sequence);
