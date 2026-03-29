@@ -82,5 +82,6 @@ void     craft_icmp_packet(t_ping *ctx, t_packet *pkt);
 void receive_ping(t_ping *ctx);
 void update_stats(t_ping *ctx, double rtt);
 void print_stats(t_ping *ctx);
+void handle_icmp_error(t_ping *ctx, struct icmphdr *icmp_hdr, struct sockaddr_in *sender, ssize_t bytes_recv, size_t ip_hdr_len);
 
 #endif

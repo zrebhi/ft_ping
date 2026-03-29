@@ -11,6 +11,11 @@ int create_socket(t_ping *ctx) {
         fprintf(stderr, "ping: socket: %s\n", strerror(errno));
         return 1;
     }
-    
+
+    if (getenv("FT_PING_FORCE_TTL")) {
+        int ttl = 1;
+        setsockopt(ctx->sockfd, IPPROTO_IP, IP_TTL, &ttl, sizeof(ttl));
+    }
+
     return EX_OK;
 }

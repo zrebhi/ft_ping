@@ -9,6 +9,7 @@ SRCS        = src/main.c \
               src/socket.c \
               src/packet.c \
 			  src/stats.c \
+			  src/verbose.c \
 
 OBJS        = $(SRCS:.c=.o)
 
@@ -39,6 +40,7 @@ test: $(NAME)
 	@./tests/test_loop.sh
 	@./tests/test_recv.sh
 	@./tests/test_signals.sh
+	@./tests/test_verbose.sh
 
 bonus: $(BONUS_OBJS)
 	$(CC) $(CFLAGS) $(BONUS_OBJS) -o $(NAME)
