@@ -15,7 +15,16 @@ SRCS        = src/main.c \
 
 OBJS        = $(SRCS:.c=.o)
 
-BONUS_SRCS  = src/bonus/main_bonus.c
+BONUS_SRCS  = src/bonus/main_bonus.c \
+              src/bonus/parser_bonus.c \
+              src/bonus/socket_bonus.c \
+              src/dns.c \
+              src/packet.c \
+              src/ping.c \
+              src/stats.c \
+              src/verbose.c \
+			  src/icmp_utils.c \
+			  
 BONUS_OBJS  = $(BONUS_SRCS:.c=.o)
 
 all: $(NAME)
@@ -45,6 +54,6 @@ test: $(NAME)
 	@./tests/test_verbose.sh
 
 bonus: $(BONUS_OBJS)
-	$(CC) $(CFLAGS) $(BONUS_OBJS) -o $(NAME)
+	$(CC) $(CFLAGS) $(BONUS_OBJS) -o $(NAME) -lm
 
 .PHONY: all clean fclean re bonus test
