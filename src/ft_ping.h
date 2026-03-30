@@ -53,6 +53,7 @@ typedef struct s_ping {
     bool    is_ignore_routing;
     char    *target_host;
     int     ttl;
+    int     timeout;
     unsigned long  count;
     
     // Network Resolution Fields
