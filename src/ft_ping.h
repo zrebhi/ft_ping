@@ -49,6 +49,7 @@ typedef struct s_stats {
 typedef struct s_ping {
     bool    is_help;
     bool    is_verbose;
+    bool    is_ignore_routing;
     char    *target_host;
     int     ttl;
     
