@@ -57,12 +57,14 @@ static void handle_echo_reply(t_ping *ctx, struct iphdr *ip_hdr,
 
         update_stats(ctx, rtt);
         
-        printf("%zd bytes from %s: icmp_seq=%d ttl=%d time=%.3f ms\n", 
-                bytes_recv - ip_hdr_len, 
-                ctx->dest_ip, 
-                recv_seq, 
-                ip_hdr->ttl, 
-                rtt);
+        if (!ctx->is_quiet) {
+            printf("%zd bytes from %s: icmp_seq=%d ttl=%d time=%.3f ms\n", 
+                    bytes_recv - ip_hdr_len, 
+                    ctx->dest_ip, 
+                    recv_seq, 
+                    ip_hdr->ttl, 
+                    rtt);
+        }
     }
 }
 

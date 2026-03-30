@@ -5,6 +5,7 @@ void print_usage(void) {
     printf("Send ICMP ECHO_REQUEST packets to network hosts.\n\n");
     printf(" Options valid for all request types:\n\n");
     printf("  -c, --count=NUMBER         stop after sending NUMBER packets\n");
+    printf("  -q, --quiet                quiet output\n");
     printf("  -r, --ignore-routing       send directly to a host on an attached network\n");
     printf("      --ttl=N                specify N as time-to-live\n");
     printf("  -w, --timeout=N            stop after N seconds\n");
@@ -90,6 +91,8 @@ int parse_args(int argc, char **argv, t_ping *ctx) {
                 ctx->is_help = true;
             } else if (strcmp(argv[i], "--verbose") == 0) {
                 ctx->is_verbose = true;
+            } else if (strcmp(argv[i], "--quiet") == 0) {
+                ctx->is_quiet = true;
             } else if (strncmp(argv[i], "--ttl=", 6) == 0) {
                 if (extract_numeric(argv[i] + 6, 1, 255, &ctx->ttl) != EX_OK)
                 return (EX_USAGE);
@@ -138,6 +141,8 @@ int parse_args(int argc, char **argv, t_ping *ctx) {
             for (int j = 1; argv[i][j] != '\0'; j++) {
                 if (argv[i][j] == 'v') {
                     ctx->is_verbose = true;
+                } else if (argv[i][j] == 'q') {
+                    ctx->is_quiet = true;
                 } else if (argv[i][j] == '?') {
                     ctx->is_help = true;
                 } else if (argv[i][j] == 'r') {
