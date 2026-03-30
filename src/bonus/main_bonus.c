@@ -106,6 +106,9 @@ int main(int argc, char **argv) {
     /* Main execution loop */
     while (g_action != 2) {
         if (g_action == 1) {
+            if (ping_ctx.count != 0 && ping_ctx.stats.packets_transmitted >= ping_ctx.count) {
+                break; 
+            }
             g_action = 0;
             send_ping(&ping_ctx);
             alarm(1);
@@ -114,7 +117,14 @@ int main(int argc, char **argv) {
          * This prevents busy-waiting and ensures RTT calculations remain highly accurate.
          */
         receive_ping(&ping_ctx);
+        /* Check count before sending and after receiving for responsiveness */
+        if (ping_ctx.count != 0 && ping_ctx.stats.packets_received >= ping_ctx.count) {
+                break; 
+        }
     }
+
+    /* Disarm the pending timer to prevent SIGALRM from firing during print_stats */
+    alarm(0);
 
     print_stats(&ping_ctx);
 

@@ -3,11 +3,12 @@
 # Source your excellent helper script
 source ./tests/test_helper.sh
 
-require_root "TTL Bonus"
 
 echo "========================================"
 echo "      Running ft_ping TTL Tests         "
 echo "========================================"
+
+require_root "TTL Bonus"
 
 # Signature: run_test "name" "args" expected_code "expected_str" duration "sig_flag" is_regex
 run_test "TTL 0 (Too small)" "--ttl 0 8.8.8.8" 64 "ping: option value too small: 0" 1 "" 0
