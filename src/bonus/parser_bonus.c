@@ -4,6 +4,8 @@ void print_usage(void) {
     printf("Usage: ping [OPTION...] HOST ...\n");
     printf("Send ICMP ECHO_REQUEST packets to network hosts.\n\n");
     printf(" Options valid for all request types:\n\n");
+    printf("  -r, --ignore-routing       send directly to a host on an attached network\n");
+    printf("      --ttl=N                specify N as time-to-live\n");
     printf("  -v, --verbose              verbose output\n");
     printf("  -?, --help                 give this help list\n");
     printf("\nReport bugs to <bug-inetutils@gnu.org>.\n");
@@ -79,6 +81,8 @@ int parse_args(int argc, char **argv, t_ping *ctx) {
                 }
                 if (extract_numeric(argv[++i], 1, 255, &ctx->ttl) != EX_OK)
                 return EX_USAGE;
+            } else if (strcmp(argv[i], "--ignore-routing") == 0) {
+                ctx->is_ignore_routing = true;
             } else {
                 fprintf(stderr, "ping: unrecognized option '%s'\n", argv[i]);
                 fprintf(stderr, "Try 'ping --help' or 'ping --usage' for more information.\n");
@@ -92,7 +96,10 @@ int parse_args(int argc, char **argv, t_ping *ctx) {
                     ctx->is_verbose = true;
                 } else if (argv[i][j] == '?') {
                     ctx->is_help = true;
-                } else {
+                } else if (argv[i][j] == 'r') {
+                    ctx->is_ignore_routing = true;
+                }
+                else {
                     fprintf(stderr, "ping: invalid option -- '%c'\n", argv[i][j]);
                     fprintf(stderr, "Try 'ping --help' or 'ping --usage' for more information.\n");
                     return (EX_USAGE); 
