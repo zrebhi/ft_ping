@@ -4,6 +4,7 @@ void print_usage(void) {
     printf("Usage: ping [OPTION...] HOST ...\n");
     printf("Send ICMP ECHO_REQUEST packets to network hosts.\n\n");
     printf(" Options valid for all request types:\n\n");
+    printf("  -c, --count=NUMBER         stop after sending NUMBER packets\n");
     printf("  -r, --ignore-routing       send directly to a host on an attached network\n");
     printf("      --ttl=N                specify N as time-to-live\n");
     printf("  -v, --verbose              verbose output\n");
@@ -55,6 +56,24 @@ static int extract_numeric(const char *val_str, int min, int max, int *target) {
     return EX_OK;
 }
 
+/* Mimics inetutils 2.0 -c flag parsing: uses strtoul, catches garbage, but allows overflow/underflow */
+static int extract_count(const char *val_str, size_t *target) {
+    char *endptr;
+    unsigned long val;
+
+    errno = 0;
+    val = strtoul(val_str, &endptr, 0);
+
+    /* If no conversion was performed or there are leftover characters, it's garbage */
+    if (val_str == endptr || *endptr != '\0') {
+        fprintf(stderr, "ping: invalid value (`%s' near `%s')\n", val_str, endptr);
+        return EX_USAGE;
+    }
+
+    *target = (size_t)val;
+    return EX_OK;
+}
+
 int parse_args(int argc, char **argv, t_ping *ctx) {
     bool end_of_options = false;
 
@@ -83,6 +102,17 @@ int parse_args(int argc, char **argv, t_ping *ctx) {
                 return EX_USAGE;
             } else if (strcmp(argv[i], "--ignore-routing") == 0) {
                 ctx->is_ignore_routing = true;
+            } else if (strncmp(argv[i], "--count=", 8) == 0) {
+                if (extract_count(argv[i] + 8, &ctx->count) != EX_OK)
+                    return EX_USAGE;
+            } else if (strcmp(argv[i], "--count") == 0) {
+                if (i + 1 >= argc) {
+                    fprintf(stderr, "ping: option '--count' requires an argument\n");
+                    fprintf(stderr, "Try 'ping --help' or 'ping --usage' for more information.\n");
+                    return EX_USAGE;
+                }
+                if (extract_count(argv[++i], &ctx->count) != EX_OK)
+                    return EX_USAGE;
             } else {
                 fprintf(stderr, "ping: unrecognized option '%s'\n", argv[i]);
                 fprintf(stderr, "Try 'ping --help' or 'ping --usage' for more information.\n");
@@ -98,6 +128,23 @@ int parse_args(int argc, char **argv, t_ping *ctx) {
                     ctx->is_help = true;
                 } else if (argv[i][j] == 'r') {
                     ctx->is_ignore_routing = true;
+                } else if (argv[i][j] == 'c') {
+                    if (argv[i][j+1] != '\0') {
+                        /* Handles concatenated values like -c3 */
+                        if (extract_count(&argv[i][j+1], &ctx->count) != EX_OK)
+                            return EX_USAGE;
+                        break; 
+                    } else {
+                        /* Handles space-separated values like -c 3 */
+                        if (i + 1 >= argc) {
+                            fprintf(stderr, "ping: option requires an argument -- 'c'\n");
+                            fprintf(stderr, "Try 'ping --help' or 'ping --usage' for more information.\n");
+                            return EX_USAGE;
+                        }
+                        if (extract_count(argv[++i], &ctx->count) != EX_OK)
+                            return EX_USAGE;
+                        break;
+                    }
                 }
                 else {
                     fprintf(stderr, "ping: invalid option -- '%c'\n", argv[i][j]);

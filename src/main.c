@@ -116,6 +116,9 @@ int main(int argc, char **argv) {
          */
         receive_ping(&ping_ctx);
     }
+    
+    /* Disarm the pending timer to prevent SIGALRM from firing during print_stats */
+    alarm(0);
 
     print_stats(&ping_ctx);
 

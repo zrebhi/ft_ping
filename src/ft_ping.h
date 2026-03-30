@@ -21,6 +21,7 @@
 # include <signal.h>
 # include <sys/time.h>
 # include <math.h>
+# include <limits.h>
 
 /* Networking headers */
 # include <sys/types.h>
@@ -52,6 +53,7 @@ typedef struct s_ping {
     bool    is_ignore_routing;
     char    *target_host;
     int     ttl;
+    unsigned long  count;
     
     // Network Resolution Fields
     struct sockaddr_in dest_addr;

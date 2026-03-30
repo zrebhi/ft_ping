@@ -67,5 +67,6 @@ test_bonus: bonus
 	@BONUS_MODE=1 ./tests/test_verbose.sh
 	@./tests/bonus/test_ttl.sh
 	@./tests/bonus/test_r_flag.sh
+	@./tests/bonus/test_c_flag.sh
 
 .PHONY: all clean fclean re bonus test test_bonus
