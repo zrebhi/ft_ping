@@ -8,6 +8,7 @@ SRCS        = src/main.c \
               src/dns.c \
               src/socket.c \
               src/packet.c \
+			  src/ping.c \
 			  src/stats.c \
 			  src/verbose.c \
 
