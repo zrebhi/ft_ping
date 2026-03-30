@@ -51,6 +51,7 @@ typedef struct s_ping {
     bool    is_help;
     bool    is_verbose;
     bool    is_ignore_routing;
+    bool    is_quiet;
     char    *target_host;
     int     ttl;
     int     timeout;
