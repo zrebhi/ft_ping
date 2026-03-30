@@ -19,7 +19,15 @@ run_verbose_diff_test() {
     sys_raw=$(ping -v --ttl=1 -c 1 $target 2>&1)
 
     local ft_raw
-    ft_raw=$(timeout 2 sudo env FT_PING_FORCE_TTL=1 $PING_BIN -v $target 2>&1)
+    if [ "$BONUS_MODE" = "1" ]; then
+        # Bonus implementation: Use the newly built --ttl flag
+        echo "Running verbose tests in BONUS mode..."
+        ft_raw=$(timeout -s INT 2 $PING_BIN -v --ttl 1 $target 2>&1)
+    else
+        # Mandatory implementation: Rely on the environment variable workaround
+        echo "Running verbose tests in MANDATORY mode..."
+        ft_raw=$(timeout -s INT 2 env FT_PING_FORCE_TTL=1 $PING_BIN -v $target 2>&1)
+    fi
 
     # Sanitize output to ensure stable diffing across different environments and network routes
     sanitize() {

@@ -15,7 +15,16 @@ SRCS        = src/main.c \
 
 OBJS        = $(SRCS:.c=.o)
 
-BONUS_SRCS  = src/bonus/main_bonus.c
+BONUS_SRCS  = src/bonus/main_bonus.c \
+              src/bonus/parser_bonus.c \
+              src/bonus/socket_bonus.c \
+              src/dns.c \
+              src/packet.c \
+              src/ping.c \
+              src/stats.c \
+              src/verbose.c \
+			  src/icmp_utils.c \
+			  
 BONUS_OBJS  = $(BONUS_SRCS:.c=.o)
 
 all: $(NAME)
@@ -34,6 +43,9 @@ fclean: clean
 
 re: fclean all
 
+bonus: $(BONUS_OBJS)
+	$(CC) $(CFLAGS) $(BONUS_OBJS) -o $(NAME) -lm
+
 test: $(NAME)
 	@./tests/test_cli.sh
 	@./tests/test_dns.sh
@@ -44,7 +56,15 @@ test: $(NAME)
 	@./tests/test_signals.sh
 	@./tests/test_verbose.sh
 
-bonus: $(BONUS_OBJS)
-	$(CC) $(CFLAGS) $(BONUS_OBJS) -o $(NAME)
+test_bonus: bonus
+	@./tests/test_cli.sh
+	@./tests/test_dns.sh
+	@./tests/test_valgrind.sh
+	@./tests/test_socket.sh
+	@./tests/test_loop.sh
+	@./tests/test_recv.sh
+	@./tests/test_signals.sh
+	@BONUS_MODE=1 ./tests/test_verbose.sh
+	@./tests/bonus/test_ttl.sh
 
-.PHONY: all clean fclean re bonus test
+.PHONY: all clean fclean re bonus test test_bonus

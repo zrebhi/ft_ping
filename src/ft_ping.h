@@ -50,6 +50,7 @@ typedef struct s_ping {
     bool    is_help;
     bool    is_verbose;
     char    *target_host;
+    int     ttl;
     
     // Network Resolution Fields
     struct sockaddr_in dest_addr;
