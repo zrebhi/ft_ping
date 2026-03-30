@@ -7,6 +7,7 @@ void print_usage(void) {
     printf("  -c, --count=NUMBER         stop after sending NUMBER packets\n");
     printf("  -r, --ignore-routing       send directly to a host on an attached network\n");
     printf("      --ttl=N                specify N as time-to-live\n");
+    printf("  -w, --timeout=N            stop after N seconds\n");
     printf("  -v, --verbose              verbose output\n");
     printf("  -?, --help                 give this help list\n");
     printf("\nReport bugs to <bug-inetutils@gnu.org>.\n");
@@ -113,11 +114,24 @@ int parse_args(int argc, char **argv, t_ping *ctx) {
                 }
                 if (extract_count(argv[++i], &ctx->count) != EX_OK)
                     return EX_USAGE;
-            } else {
+            } else if (strncmp(argv[i], "--timeout=", 10) == 0) {
+                if (extract_numeric(argv[i] + 10, 1, INT_MAX, &ctx->timeout) != EX_OK)
+                    return EX_USAGE;
+            } else if (strcmp(argv[i], "--timeout") == 0) {
+                if (i + 1 >= argc) {
+                    fprintf(stderr, "ping: option '--timeout' requires an argument\n");
+                    fprintf(stderr, "Try 'ping --help' or 'ping --usage' for more information.\n");
+                    return EX_USAGE;
+                }
+                if (extract_numeric(argv[++i], 1, INT_MAX, &ctx->timeout) != EX_OK)
+                    return EX_USAGE; 
+            }
+            else {
                 fprintf(stderr, "ping: unrecognized option '%s'\n", argv[i]);
                 fprintf(stderr, "Try 'ping --help' or 'ping --usage' for more information.\n");
                 return (EX_USAGE);
             }
+    
         }
         /* Check for short concatenated options */
         else if (!end_of_options && argv[i][0] == '-' && argv[i][1] != '\0') {
@@ -145,6 +159,21 @@ int parse_args(int argc, char **argv, t_ping *ctx) {
                             return EX_USAGE;
                         break;
                     }
+                } else if (argv[i][j] == 'w') {
+                    if (argv[i][j+1] != '\0') {
+                        if (extract_numeric(&argv[i][j+1], 1, INT_MAX, &ctx->timeout) != EX_OK)
+                            return EX_USAGE;
+                        break; 
+                    } else {
+                        if (i + 1 >= argc) {
+                            fprintf(stderr, "ping: option requires an argument -- 'w'\n");
+                            fprintf(stderr, "Try 'ping --help' or 'ping --usage' for more information.\n");
+                            return EX_USAGE;
+                        }
+                        if (extract_numeric(argv[++i], 1, INT_MAX, &ctx->timeout) != EX_OK)
+                            return EX_USAGE;
+                        break;
+                    }
                 }
                 else {
                     fprintf(stderr, "ping: invalid option -- '%c'\n", argv[i][j]);
@@ -152,7 +181,7 @@ int parse_args(int argc, char **argv, t_ping *ctx) {
                     return (EX_USAGE); 
                 }
             }
-        } 
+        }
         /* It's a positional argument (hostname) */
         else {
             if (ctx->target_host == NULL) {

@@ -62,6 +62,21 @@ int setup_signals(void) {
     return 0;
 }
 
+/* Safely calls gettimeofday and handles catastrophic failures */
+static int safe_gettimeofday(struct timeval *tv) {
+    if (gettimeofday(tv, NULL) == -1) {
+        fprintf(stderr, "ping: gettimeofday failed: %s\n", strerror(errno));
+        return -1;
+    }
+    return 0;
+}
+
+/* Calculates the exact elapsed time in seconds, accounting for microseconds */
+static double get_elapsed_seconds(struct timeval *start, struct timeval *end) {
+    return (double)(end->tv_sec - start->tv_sec) + 
+           (double)(end->tv_usec - start->tv_usec) / 1000000.0;
+}
+
 int main(int argc, char **argv) {
     t_ping ping_ctx = {0};
     int status;
@@ -103,8 +118,22 @@ int main(int argc, char **argv) {
                 ping_ctx.target_host, ping_ctx.dest_ip, PING_DATA_SIZE);
     }
 
+    if (safe_gettimeofday(&ping_ctx.stats.start_time) != 0) {
+        return 1;
+    }
+
     /* Main execution loop */
     while (g_action != 2) {
+
+        if (ping_ctx.timeout > 0) {
+            struct timeval now;
+            if (safe_gettimeofday(&now) != 0) break;
+            
+            if (get_elapsed_seconds(&ping_ctx.stats.start_time, &now) >= (double)ping_ctx.timeout) {
+                break;
+            }
+        }
+
         if (g_action == 1) {
             if (ping_ctx.count != 0 && ping_ctx.stats.packets_transmitted >= ping_ctx.count) {
                 break; 
