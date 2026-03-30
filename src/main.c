@@ -103,8 +103,7 @@ int main(int argc, char **argv) {
         printf("PING %s (%s): %d data bytes\n", 
                 ping_ctx.target_host, ping_ctx.dest_ip, PING_DATA_SIZE);
     }
-
-
+    
     /* Main execution loop */
     while (g_action != 2) {
         if (g_action == 1) {
