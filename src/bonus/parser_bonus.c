@@ -5,6 +5,7 @@ void print_usage(void) {
     printf("Send ICMP ECHO_REQUEST packets to network hosts.\n\n");
     printf(" Options valid for all request types:\n\n");
     printf("  -r, --ignore-routing       send directly to a host on an attached network\n");
+    printf("      --ttl=N                specify N as time-to-live\n");
     printf("  -v, --verbose              verbose output\n");
     printf("  -?, --help                 give this help list\n");
     printf("\nReport bugs to <bug-inetutils@gnu.org>.\n");
