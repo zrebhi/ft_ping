@@ -5,6 +5,9 @@
  * Increments the sequence number upon execution.
  */
 void send_ping(t_ping *ctx) {
+    if (!ctx)
+        return;
+
     t_packet packet;
     
     craft_icmp_packet(ctx, &packet);
@@ -30,6 +33,9 @@ void send_ping(t_ping *ctx) {
  * Extracts the IP header to find the ICMP payload.
  */
 void receive_ping(t_ping *ctx) {
+    if (!ctx)
+        return;
+
     struct sockaddr_in sender;
     socklen_t sender_len = sizeof(sender);
 
@@ -52,9 +58,20 @@ void receive_ping(t_ping *ctx) {
         return;
     }
 
+    if (bytes_recv < (ssize_t)sizeof(struct iphdr)) {
+        // Packet is too small to even contain an IP header. Drop it safely.
+        return;
+    }
+
     struct iphdr *ip_hdr = (struct iphdr *)ctx->recv_buf; 
     /* ihl is given in 4-byte words so we multiply by 4 to get the length in bytes */
     size_t ip_hdr_len = ip_hdr->ihl * 4;
+
+    if (bytes_recv < (ssize_t)(ip_hdr_len + sizeof(struct icmphdr))) {
+        // Packet is too small to contain a complete ICMP header. Drop it.
+        return;
+    }
+    
     /* Extract the ICMP Header by offsetting the buffer pointer */
     struct icmphdr *icmp_hdr = (struct icmphdr *)(ctx->recv_buf + ip_hdr_len);
 
