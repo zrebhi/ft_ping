@@ -90,13 +90,9 @@ static void process_packet(t_ping *ctx, ssize_t bytes_recv, struct sockaddr_in *
         if (bytes_recv < (ssize_t)(ip_hdr_len + sizeof(struct icmphdr) + sizeof(struct timeval))) {
             return; 
         }
-        
         handle_echo_reply(ctx, ip_hdr, icmp_hdr, bytes_recv, ip_hdr_len);
-        
     } else {
-        if (ctx->is_verbose) {
-            handle_icmp_error(ctx, icmp_hdr, sender, bytes_recv, ip_hdr_len);
-        }
+        handle_icmp_error(ctx, icmp_hdr, sender, bytes_recv, ip_hdr_len);
     }
 }
 

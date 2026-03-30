@@ -11,6 +11,7 @@ SRCS        = src/main.c \
 			  src/ping.c \
 			  src/stats.c \
 			  src/verbose.c \
+			  src/icmp_utils.c \
 
 OBJS        = $(SRCS:.c=.o)
 

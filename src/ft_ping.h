@@ -82,6 +82,7 @@ void     craft_icmp_packet(t_ping *ctx, t_packet *pkt);
 void update_stats(t_ping *ctx, double rtt);
 void print_stats(t_ping *ctx);
 void handle_icmp_error(t_ping *ctx, struct icmphdr *icmp_hdr, struct sockaddr_in *sender, ssize_t bytes_recv, size_t ip_hdr_len);
+void print_ip_hdr_dump(struct iphdr *unaligned_ip, struct icmphdr *unaligned_icmp);
 void send_ping(t_ping *ctx);
 void receive_ping(t_ping *ctx);
 
