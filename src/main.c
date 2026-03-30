@@ -25,6 +25,43 @@ void int_handler(int signum) {
     g_action = 2;
 }
 
+/*
+ * Initializes and registers process-wide signal handlers.
+ * Returns: 0 on success, or 1 on failure.
+ */
+int setup_signals(void) {
+    /* Register the alarm signal handler */
+    struct sigaction sa = {0}; 
+
+    sigemptyset(&sa.sa_mask);
+    sigaddset(&sa.sa_mask, SIGINT);   // Block SIGINT while in alarm_handler
+    sigaddset(&sa.sa_mask, SIGTERM);  // Block SIGTERM while in alarm_handler
+
+    sa.sa_handler = alarm_handler;
+    sa.sa_flags = 0; // Ensures no SA_RESTART
+
+    if (sigaction(SIGALRM, &sa, NULL) == -1) {
+        fprintf(stderr, "ping: sigaction: %s\n", strerror(errno));
+        return 1;
+    }
+
+    /* Register the Ctrl+C signal handler */
+    struct sigaction sa_int = {0}; 
+
+    sigemptyset(&sa_int.sa_mask);
+    sigaddset(&sa_int.sa_mask, SIGALRM); // Block SIGALRM while in int_handler
+
+    sa_int.sa_handler = int_handler;
+    sa_int.sa_flags = 0; // Ensures no SA_RESTART
+
+    if (sigaction(SIGINT, &sa_int, NULL) == -1 || sigaction(SIGTERM, &sa_int, NULL) == -1) {
+        fprintf(stderr, "ping: sigaction: %s\n", strerror(errno));
+        return 1;
+    }
+
+    return 0; // Success
+}
+
 int main(int argc, char **argv) {
     t_ping ping_ctx = {0};
     int status;
@@ -34,6 +71,11 @@ int main(int argc, char **argv) {
      * the process is killed by 'timeout'. 
      */
     setlinebuf(stdout);
+
+    /* Shield the process immediately before network resolution */
+    if (setup_signals() != 0) {
+        return 1;
+    }
 
     status = parse_args(argc, argv, &ping_ctx);
     if (status != EX_OK || ping_ctx.is_help) {
@@ -62,27 +104,12 @@ int main(int argc, char **argv) {
                 ping_ctx.target_host, ping_ctx.dest_ip, PING_DATA_SIZE);
     }
 
-    /* Register the alarm signal handler using sigaction */
-    struct sigaction sa = {0}; 
-    
-    sa.sa_handler = alarm_handler;
-    /* * Ensure SA_RESTART is disabled preventing the OS 
-     * from automatically restarting system calls interrupted by a signal */
-    sa.sa_flags = 0;
-    
-    if (sigaction(SIGALRM, &sa, NULL) == -1) {
-        fprintf(stderr, "ping: sigaction: %s\n", strerror(errno));
-        return 1;
-    }
-
-    /* Register the Ctrl+C signal handler */
-    signal(SIGINT, int_handler);
 
     /* Main execution loop */
     while (g_action != 2) {
         if (g_action == 1) {
-            send_ping(&ping_ctx);
             g_action = 0;
+            send_ping(&ping_ctx);
             alarm(1);
         }
         /* * Blocks here (0% CPU) until an ICMP packet arrives or the 1-second alarm fires.
