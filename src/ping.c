@@ -9,18 +9,22 @@ void send_ping(t_ping *ctx) {
         return;
 
     t_packet packet;
-    
     craft_icmp_packet(ctx, &packet);
+
+    int send_flags = 0;
+    if (ctx->is_ignore_routing) {
+        send_flags = MSG_DONTROUTE;
+    }
     
     ssize_t bytes_sent = sendto(ctx->sockfd, 
         &packet, 
         sizeof(packet), 
-        0, 
+        send_flags, 
         (struct sockaddr *)&ctx->dest_addr, 
         sizeof(ctx->dest_addr));
         
         if (bytes_sent < 0) {
-            fprintf(stderr, "ping: sendto: %s\n", strerror(errno));
+            fprintf(stderr, "ping: sending packet: %s\n", strerror(errno));
         } else {
         ctx->stats.packets_transmitted++;
     }
