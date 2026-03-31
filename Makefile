@@ -36,15 +36,18 @@ $(NAME): $(OBJS)
 	$(CC) $(CFLAGS) -c $< -o $@
 
 clean:
-	rm -f $(OBJS) $(BONUS_OBJS)
+	rm -f $(OBJS) $(BONUS_OBJS) .bonus
 
 fclean: clean
 	rm -f $(NAME)
 
 re: fclean all
 
-bonus: $(BONUS_OBJS)
+bonus: .bonus
+
+.bonus: $(BONUS_OBJS)
 	$(CC) $(CFLAGS) $(BONUS_OBJS) -o $(NAME) -lm
+	touch .bonus
 
 test: $(NAME)
 	@./tests/test_cli.sh
