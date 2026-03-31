@@ -65,14 +65,132 @@ static int extract_count(const char *val_str, size_t *target) {
 
     errno = 0;
     val = strtoul(val_str, &endptr, 0);
-
+    
     /* If no conversion was performed or there are leftover characters, it's garbage */
     if (val_str == endptr || *endptr != '\0') {
         fprintf(stderr, "ping: invalid value (`%s' near `%s')\n", val_str, endptr);
         return EX_USAGE;
     }
-
+    
     *target = (size_t)val;
+    return EX_OK;
+}
+
+
+/* Safely consumes the next argv element if available, updating the loop index */
+static char *consume_next_arg(char **argv, int *i, int argc, const char *flag_display, bool is_short_opt) {
+    if (*i + 1 < argc) {
+        (*i)++;
+        return argv[*i];
+    }
+    
+    if (is_short_opt) {
+        fprintf(stderr, "ping: option requires an argument -- '%s'\n", flag_display);
+    } else {
+        fprintf(stderr, "ping: option '%s' requires an argument\n", flag_display);
+    }
+    
+    fprintf(stderr, "Try 'ping --help' or 'ping --usage' for more information.\n");
+    return NULL;
+}
+
+/* Extracts the value from an option, advancing the argv index if necessary */
+static char *get_opt_val(char *current_arg, char **argv, int *i, int argc, const char *flag_name) {
+    char *eq_ptr = strchr(current_arg, '=');
+    
+    /* Case A: Value is attached via '=' (e.g., --ttl=64) */
+    if (eq_ptr) {
+        return eq_ptr + 1; 
+    }
+    
+    /* Case B & C: Space-separated value or Missing value */
+    return consume_next_arg(argv, i, argc, flag_name, false);
+}
+
+/* Checks if the argument strictly matches the flag, or matches the flag + '=' */
+static bool is_long_opt(const char *arg, const char *flag) {
+    size_t len = strlen(flag);
+    return (strncmp(arg, flag, len) == 0 && (arg[len] == '\0' || arg[len] == '='));
+}
+
+static int parse_long_opt(char **argv, int *i, int argc, t_ping *ctx) {
+    char *arg = argv[*i];
+
+    if (is_long_opt(arg, "--help")) {
+        ctx->is_help = true;
+    } else if (is_long_opt(arg, "--verbose")) {
+        ctx->is_verbose = true;
+    } else if (is_long_opt(arg, "--quiet")) {
+        ctx->is_quiet = true;
+    } else if (is_long_opt(arg, "--ignore-routing")) {
+        ctx->is_ignore_routing = true;
+    } else if (is_long_opt(arg, "--ttl")) {
+        char *val = get_opt_val(arg, argv, i, argc, "--ttl");
+        if (!val || extract_numeric(val, 1, 255, &ctx->ttl) != EX_OK) return EX_USAGE;
+    } else if (is_long_opt(arg, "--timeout")) {
+        char *val = get_opt_val(arg, argv, i, argc, "--timeout");
+        if (!val || extract_numeric(val, 1, INT_MAX, &ctx->timeout) != EX_OK) return EX_USAGE;
+    } else if (is_long_opt(arg, "--count")) {
+        char *val = get_opt_val(arg, argv, i, argc, "--count");
+        if (!val || extract_count(val, &ctx->count) != EX_OK) return EX_USAGE;
+    } else {
+        fprintf(stderr, "ping: unrecognized option '%s'\n", arg);
+        return EX_USAGE;
+    }
+    return EX_OK;
+}
+
+static int parse_short_opt(char **argv, int *i, int argc, t_ping *ctx) {
+    char *arg = argv[*i];
+    int j = 1; /* Start at 1 to skip the '-' */
+
+    while (arg[j] != '\0') {
+        char flag = arg[j];
+
+        /* Handle Boolean Flags */
+        if (flag == 'v') {
+            ctx->is_verbose = true;
+        } else if (flag == 'q') {
+            ctx->is_quiet = true;
+        } else if (flag == 'r') {
+            ctx->is_ignore_routing = true;
+        } else if (flag == '?') {
+            ctx->is_help = true;
+        } 
+        /* Handle Flags Requiring Arguments */
+        else if (flag == 'c' || flag == 'w') {
+            char *val_str = NULL;
+            
+            /* Case A: Concatenated value (e.g., -c3 or -vqc3) */
+            if (arg[j + 1] != '\0') {
+                val_str = &arg[j + 1];
+            } 
+            /* Case B & C: Space-separated value or Missing value */
+            else {
+                char flag_str[2] = {flag, '\0'};
+                val_str = consume_next_arg(argv, i, argc, flag_str, true);
+                if (!val_str) return EX_USAGE;
+            }
+
+            /* Route the extracted string to the correct numeric parser */
+            if (flag == 'c') {
+                if (extract_count(val_str, &ctx->count) != EX_OK) return EX_USAGE;
+            } else if (flag == 'w') {
+                if (extract_numeric(val_str, 1, INT_MAX, &ctx->timeout) != EX_OK) return EX_USAGE;
+            }
+
+            /* The rest of this arg string was just consumed as a value, so stop looping */
+            break; 
+        } 
+        else {
+            fprintf(stderr, "ping: invalid option -- '%c'\n", flag);
+            fprintf(stderr, "Try 'ping --help' or 'ping --usage' for more information.\n");
+            return EX_USAGE;
+        }
+        
+        j++;
+    }
+    
     return EX_OK;
 }
 
@@ -80,114 +198,23 @@ int parse_args(int argc, char **argv, t_ping *ctx) {
     bool end_of_options = false;
 
     for (int i = 1; i < argc; i++) {
-
+        /* Handle the explicit end-of-options marker '--' */
         if (!end_of_options && strcmp(argv[i], "--") == 0) {
             end_of_options = true;
-            continue; /* Skip the '--' itself and move to the next argument */
-        }
-
+        } 
+        /* Handle Long Options (e.g., --ttl=64) */
         else if (!end_of_options && strncmp(argv[i], "--", 2) == 0) {
-            if (strcmp(argv[i], "--help") == 0) {
-                ctx->is_help = true;
-            } else if (strcmp(argv[i], "--verbose") == 0) {
-                ctx->is_verbose = true;
-            } else if (strcmp(argv[i], "--quiet") == 0) {
-                ctx->is_quiet = true;
-            } else if (strncmp(argv[i], "--ttl=", 6) == 0) {
-                if (extract_numeric(argv[i] + 6, 1, 255, &ctx->ttl) != EX_OK)
-                return (EX_USAGE);
-            } else if (strcmp(argv[i], "--ttl") == 0) {
-                if (i + 1 >= argc) {
-                    fprintf(stderr, "ping: option '--ttl' requires an argument\n");
-                    fprintf(stderr, "Try 'ping --help' or 'ping --usage' for more information.\n");
-                    return (EX_USAGE);
-                }
-                if (extract_numeric(argv[++i], 1, 255, &ctx->ttl) != EX_OK)
+            if (parse_long_opt(argv, &i, argc, ctx) != EX_OK) {
                 return EX_USAGE;
-            } else if (strcmp(argv[i], "--ignore-routing") == 0) {
-                ctx->is_ignore_routing = true;
-            } else if (strncmp(argv[i], "--count=", 8) == 0) {
-                if (extract_count(argv[i] + 8, &ctx->count) != EX_OK)
-                    return EX_USAGE;
-            } else if (strcmp(argv[i], "--count") == 0) {
-                if (i + 1 >= argc) {
-                    fprintf(stderr, "ping: option '--count' requires an argument\n");
-                    fprintf(stderr, "Try 'ping --help' or 'ping --usage' for more information.\n");
-                    return EX_USAGE;
-                }
-                if (extract_count(argv[++i], &ctx->count) != EX_OK)
-                    return EX_USAGE;
-            } else if (strncmp(argv[i], "--timeout=", 10) == 0) {
-                if (extract_numeric(argv[i] + 10, 1, INT_MAX, &ctx->timeout) != EX_OK)
-                    return EX_USAGE;
-            } else if (strcmp(argv[i], "--timeout") == 0) {
-                if (i + 1 >= argc) {
-                    fprintf(stderr, "ping: option '--timeout' requires an argument\n");
-                    fprintf(stderr, "Try 'ping --help' or 'ping --usage' for more information.\n");
-                    return EX_USAGE;
-                }
-                if (extract_numeric(argv[++i], 1, INT_MAX, &ctx->timeout) != EX_OK)
-                    return EX_USAGE; 
             }
-            else {
-                fprintf(stderr, "ping: unrecognized option '%s'\n", argv[i]);
-                fprintf(stderr, "Try 'ping --help' or 'ping --usage' for more information.\n");
-                return (EX_USAGE);
-            }
-    
-        }
-        /* Check for short concatenated options */
+        } 
+        /* Handle Short Options (e.g., -vqc3) */
         else if (!end_of_options && argv[i][0] == '-' && argv[i][1] != '\0') {
-            for (int j = 1; argv[i][j] != '\0'; j++) {
-                if (argv[i][j] == 'v') {
-                    ctx->is_verbose = true;
-                } else if (argv[i][j] == 'q') {
-                    ctx->is_quiet = true;
-                } else if (argv[i][j] == '?') {
-                    ctx->is_help = true;
-                } else if (argv[i][j] == 'r') {
-                    ctx->is_ignore_routing = true;
-                } else if (argv[i][j] == 'c') {
-                    if (argv[i][j+1] != '\0') {
-                        /* Handles concatenated values like -c3 */
-                        if (extract_count(&argv[i][j+1], &ctx->count) != EX_OK)
-                            return EX_USAGE;
-                        break; 
-                    } else {
-                        /* Handles space-separated values like -c 3 */
-                        if (i + 1 >= argc) {
-                            fprintf(stderr, "ping: option requires an argument -- 'c'\n");
-                            fprintf(stderr, "Try 'ping --help' or 'ping --usage' for more information.\n");
-                            return EX_USAGE;
-                        }
-                        if (extract_count(argv[++i], &ctx->count) != EX_OK)
-                            return EX_USAGE;
-                        break;
-                    }
-                } else if (argv[i][j] == 'w') {
-                    if (argv[i][j+1] != '\0') {
-                        if (extract_numeric(&argv[i][j+1], 1, INT_MAX, &ctx->timeout) != EX_OK)
-                            return EX_USAGE;
-                        break; 
-                    } else {
-                        if (i + 1 >= argc) {
-                            fprintf(stderr, "ping: option requires an argument -- 'w'\n");
-                            fprintf(stderr, "Try 'ping --help' or 'ping --usage' for more information.\n");
-                            return EX_USAGE;
-                        }
-                        if (extract_numeric(argv[++i], 1, INT_MAX, &ctx->timeout) != EX_OK)
-                            return EX_USAGE;
-                        break;
-                    }
-                }
-                else {
-                    fprintf(stderr, "ping: invalid option -- '%c'\n", argv[i][j]);
-                    fprintf(stderr, "Try 'ping --help' or 'ping --usage' for more information.\n");
-                    return (EX_USAGE); 
-                }
+            if (parse_short_opt(argv, &i, argc, ctx) != EX_OK) {
+                return EX_USAGE;
             }
-        }
-        /* It's a positional argument (hostname) */
+        } 
+        /* Handle Positional Arguments (the target hostname) */
         else {
             if (ctx->target_host == NULL) {
                 ctx->target_host = argv[i];
@@ -199,14 +226,14 @@ int parse_args(int argc, char **argv, t_ping *ctx) {
     if (ctx->is_help) {
         print_usage();
         /* Return EX_OK (0) so the main program knows to exit cleanly without pinging */
-        return (EX_OK); 
+        return EX_OK; 
     }
 
     if (ctx->target_host == NULL) {
         fprintf(stderr, "ping: missing host operand\n");
         fprintf(stderr, "Try 'ping --help' or 'ping --usage' for more information.\n");
-        return (EX_USAGE); 
+        return EX_USAGE; 
     }
 
-    return (EX_OK);
+    return EX_OK;
 }
